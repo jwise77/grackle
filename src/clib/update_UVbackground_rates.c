@@ -26,25 +26,15 @@ int update_UVbackground_rates(chemistry_data *my_chemistry,
                               chemistry_data_storage *my_rates,
                               photo_rate_storage *my_uvb_rates,
                               code_units *my_units)
+
+
 {
-  /* Return if there is no radiation (rates should be all zero). */
-
-  if (my_chemistry->UVbackground == 0 ||
-      my_chemistry->primordial_chemistry == 0)
-    return SUCCESS;
-
-  /* Return if redshift is outside of on/off redshifts. */
-
-  double Redshift = 1.0 / (my_units->a_value * my_units->a_units) - 1;
-  if ( (Redshift < my_chemistry->UVbackground_redshift_off) ||
-       (Redshift > my_chemistry->UVbackground_redshift_on) )
-    return SUCCESS;
-
   /* ------------------------------------------------------------------ */
   /* First, calculate the ramp value, a number between 0 and 1 which
      is used as an external control to the radiation. */
 
   double Ramp = 0;
+  double Redshift = 1.0 / (my_units->a_value * my_units->a_units) - 1;
 
   if (Redshift < my_chemistry->UVbackground_redshift_on && 
       Redshift >= my_chemistry->UVbackground_redshift_off) {
@@ -62,6 +52,45 @@ int update_UVbackground_rates(chemistry_data *my_chemistry,
 
   }
 
+  //
+  // Calculate LWB rates that aren't redshift dependent first and then exit
+  // if the rest of the UVB rates aren't needed
+  //
+
+  /* Molecular hydrogen constant photo-dissociation */
+
+  /* Note that k31 can be set by above by the UV background table, in
+     which case it is overwritten here if (LWbackground_intensity >
+     0.0). */
+
+  if (my_chemistry->LWbackground_intensity > 0.0) 
+    my_uvb_rates->k31 = 1.38e-12 * my_chemistry->LWbackground_intensity *
+      my_units->time_units;
+  
+  /* LWbackground_sawtooth_suppression is supposed to account for the
+     suppression of LW flux due to Lyman-series absorption (giving a
+     sawtooth pattern), a la Haiman & Abel, & Rees (2000).  This is
+     really only applicable when there is plenty of neutral hydrogen
+     is around, so I'm scaling it with Ramp: when Ramp==1 (fully
+     re-ionized universe) there's no suppression. */
+
+  if (my_chemistry->LWbackground_sawtooth_suppression) {
+    double LymanSawtoothSuppressionFactor = 0.1 + 0.9 * Ramp;
+  
+    my_uvb_rates->k31 *= LymanSawtoothSuppressionFactor;
+  }
+
+  /* Return if there is no radiation (rates should be all zero). */
+
+  if (my_chemistry->UVbackground == 0 ||
+      my_chemistry->primordial_chemistry == 0)
+    return SUCCESS;
+
+  /* Return if redshift is outside of on/off redshifts. */
+
+  if ( (Redshift < my_chemistry->UVbackground_redshift_off) ||
+       (Redshift > my_chemistry->UVbackground_redshift_on) )
+    return SUCCESS;
 
   /* Interpolate the UV background table. */
   
@@ -230,29 +259,6 @@ int update_UVbackground_rates(chemistry_data *my_chemistry,
   my_uvb_rates->piHI *= Ramp;
   my_uvb_rates->piHeII *= Ramp;
   my_uvb_rates->piHeI *= Ramp;
-
-  /* Molecular hydrogen constant photo-dissociation */
-
-  /* Note that k31 can be set by above by the UV background table, in
-     which case it is overwritten here if (LWbackground_intensity >
-     0.0). */
-
-  if (my_chemistry->LWbackground_intensity > 0.0) 
-    my_uvb_rates->k31 = 1.38e-12 * my_chemistry->LWbackground_intensity *
-      my_units->time_units;
-  
-  /* LWbackground_sawtooth_suppression is supposed to account for the
-     suppression of LW flux due to Lyman-series absorption (giving a
-     sawtooth pattern), a la Haiman & Abel, & Rees (2000).  This is
-     really only applicable when there is plenty of neutral hydrogen
-     is around, so I'm scaling it with Ramp: when Ramp==1 (fully
-     re-ionized universe) there's no suppression. */
-
-  if (my_chemistry->LWbackground_sawtooth_suppression) {
-    double LymanSawtoothSuppressionFactor = 0.1 + 0.9 * Ramp;
-  
-    my_uvb_rates->k31 *= LymanSawtoothSuppressionFactor;
-  }
 
   /* Compton X-ray heating */
 
