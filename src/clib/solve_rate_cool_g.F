@@ -582,7 +582,9 @@ c      chunit = (7.17775e-12_DKIND)/(2._DKIND*uvel*uvel*mh)   ! 4.5 eV per H2 fo
      &              dt-ttot(i), 0.5_DKIND*dt)
 
                if (d(i,j,k)*dom .gt. 1e8_DKIND .and. 
-     &              edot(i) .gt. 0._DKIND) then
+     &              edot(i) .gt. 0._DKIND .and.
+     &              (iradtrans .eq. 1 .and.
+     &              kphHI(i,j,k) .eq. 0._DKIND)) then
 !              Equilibrium value for H is:
 !              H = (-1._DKIND / (4*k22)) * (k13 - sqrt(8 k13 k22 rho + k13^2))
 !              We now want this to change by 10% or less, but we're only
@@ -632,7 +634,7 @@ c      chunit = (7.17775e-12_DKIND)/(2._DKIND*uvel*uvel*mh)   ! 4.5 eV per H2 fo
                 endif
                 dtit(i) = min(dtit(i), 0.1_DKIND*heq/dheq)
               endif
-              if (iter.gt.10_DKIND) then
+              if (iter.gt.itmax/10) then
                  dtit(i) = min(olddtit*1.5_DKIND, dtit(i))
               endif
 
@@ -650,8 +652,9 @@ c      chunit = (7.17775e-12_DKIND)/(2._DKIND*uvel*uvel*mh)   ! 4.5 eV per H2 fo
      &              ttot(i),dt,de(i,j,k),dedot(i),HI(i,j,k),HIdot(i),
      &              tgas(i), dedot_prev(i), HIdot_prev(i)
                   write(4,1100) HI(i,j,k),HII(i,j,k),
-     &              HeI(i,j,k),HeII(i,j,k),HeIII(i,j,k),
-     &              HM(i,j,k),H2I(i,j,k),H2II(i,j,k),de(i,j,k)
+     &                 HeI(i,j,k),HeII(i,j,k),HeIII(i,j,k),
+     &                 HM(i,j,k),H2I(i,j,k),H2II(i,j,k),de(i,j,k),
+     &                 kphHI(i,j,k), photogamma(i,j,k)
                   write(4,1100)
      &               -      k1(i) *de(i,j,k)    *HI(i,j,k)  ,
      &               -      k7(i) *de(i,j,k)    *HI(i,j,k),
@@ -834,6 +837,20 @@ c            WARNING_MESSAGE
 !$omp critical
 #endif
             write(6,*) 'MULTI_COOL iter,j,k =',iter,j,k
+            write(6,'(" dt = ",1pe10.3," ttmin = ",1pe10.3)') dt, ttmin
+            write(6,'((16(1pe8.1)))') (dtit(i),i=is+1,ie+1)
+            write(6,'((16(1pe8.1)))') (ttot(i),i=is+1,ie+1)
+            write(6,'((16(1pe8.1)))') (edot(i),i=is+1,ie+1)
+            write(6,'((16(1pe8.1)))') (tgas(i),i=is+1,ie+1)
+            write(6,'((16(1pe8.1)))') (tgasold(i),i=is+1,ie+1)
+            write(6,'((16(1pe8.1)))') (d(i,j,k),i=is+1,ie+1)
+            write(6,'((16(1pe8.1)))') (HI(i,j,k),i=is+1,ie+1)
+            write(6,'((16(1pe8.1)))') (HII(i,j,k),i=is+1,ie+1)
+            write(6,'((16(1pe8.1)))') (H2I(i,j,k),i=is+1,ie+1)
+            write(6,'((16(1pe8.1)))') (H2II(i,j,k),i=is+1,ie+1)
+            write(6,'((16(1pe8.1)))') (kphHI(i,j,k),i=is+1,ie+1)
+            write(6,'((16(1pe8.1)))') (photogamma(i,j,k),i=is+1,ie+1)
+            write(6,'((16(l3)))') (itmask(i),i=is+1,ie+1)
 #ifdef _OPENMP
 !$omp end critical
 #endif
