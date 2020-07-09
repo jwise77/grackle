@@ -106,7 +106,8 @@ int local_solve_chemistry(chemistry_data *my_chemistry,
     my_uvb_rates.crsHeI = my_uvb_rates.crsHeII =
     my_uvb_rates.comp_xray = my_uvb_rates.temp_xray = 0.;
 
-  if (my_chemistry->UVbackground == 1) {
+  if ((my_chemistry->UVbackground == 1) ||
+      (my_chemistry->LWbackground_intensity > 0.0)) {
     if (update_UVbackground_rates(my_chemistry, my_rates,
                                   &my_uvb_rates, my_units) == FAIL) {
       fprintf(stderr, "Error in update_UVbackground_rates.\n");
