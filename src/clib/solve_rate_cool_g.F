@@ -582,7 +582,11 @@ c      chunit = (7.17775e-12_DKIND)/(2._DKIND*uvel*uvel*mh)   ! 4.5 eV per H2 fo
      &              dt-ttot(i), 0.5_DKIND*dt)
 
                if (d(i,j,k)*dom .gt. 1e8_DKIND .and. 
-     &              edot(i) .gt. 0._DKIND) then
+     &              edot(i) .gt. 0._DKIND .and.
+     &              ispecies .gt. 1 .and.
+     &              ( iradtrans .eq. 0 .or.
+     &               (iradtrans .eq. 1 .and. 
+     &                kdissH2I(i,j,k) .le. 0._DKIND) )) then
 !              Equilibrium value for H is:
 !              H = (-1._DKIND / (4*k22)) * (k13 - sqrt(8 k13 k22 rho + k13^2))
 !              We now want this to change by 10% or less, but we're only
@@ -712,9 +716,12 @@ c      chunit = (7.17775e-12_DKIND)/(2._DKIND*uvel*uvel*mh)   ! 4.5 eV per H2 fo
 #ifdef _OPENMP
 !$omp critical
 #endif
-                 write(6,*) 'HUGE dtit :: ', energy, edot(i), dtit(i),
-     &                      dt, ttot(i), abs(0.1_DKIND*energy/edot(i)), 
-     &                      real(abs(0.1_DKIND*energy/edot(i)), DKIND)
+                 write(6,*) 'gHUGE dtit :: ', i, j, k,
+     &                 energy, edot(i), dtit(i),
+     &                 dt, ttot(i), abs(0.1_DKIND*energy/edot(i)), 
+     &                 real(abs(0.1_DKIND*energy/edot(i)), DKIND),
+     &                 de(i,j,k), dedot(i), HI(i,j,k), HIdot(i), 
+     &                 d(i,j,k), heq, dheq
 #ifdef _OPENMP
 !$omp end critical
 #endif
