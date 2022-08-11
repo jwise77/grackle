@@ -210,6 +210,14 @@ For all on/off integer flags, 0 is off and 1 is on.
       directly from equation 2 of `Wolfire et al. (1995)
       <https://ui.adsabs.harvard.edu/abs/1995ApJ...443..152W/abstract>`__.
 
+.. c:var:: int dust_recombination_cooling
+
+   Flag to enable recombination cooling onto dust grains using 
+   equation 9 of `Wolfire et al. (1995) 
+   <https://ui.adsabs.harvard.edu/abs/1995ApJ...443..152W/abstract>`__
+   rescaled by the local dust-to-gas ratio. This option is automatically 
+   set by :c:data:`h2_on_dust` > 0 or :c:data:`dust_chemistry` > 0.
+   Default: 0.
 
 .. note:: With :c:data:`primordial_chemistry` > 0, the electron density
    used to calculate epsilon for :c:data:`photoelectric_heating` = 3
@@ -361,11 +369,26 @@ For all on/off integer flags, 0 is off and 1 is on.
    density. Default: 0.
 
     - 1: Use a Sobolev-like, spherically averaged method from
-      `Wolcott-Green et. al. 2011 <http://adsabs.harvard.edu/abs/2011MNRAS.418..838W>`_.
+      `Wolcott-Green \& Haiman (2019)
+      <https://ui.adsabs.harvard.edu/abs/2019MNRAS.484.2467W/>`__. Prior to
+      Grackle version 3.2, this option used the method of `Wolcott-Green et. al.
+      (2011) <https://ui.adsabs.harvard.edu/abs/2011MNRAS.418..838W/>`__.
       This option is only valid for Cartesian grid codes in 3D.
     - 2: Supply an array of lengths using the :c:data:`H2_self_shielding_length`
       field.
     - 3: Use the local Jeans length.
+
+.. c:var:: int H2_custom_shielding
+
+   Flag to enable the user to provide an additional field which acts as 
+   an additional attenuation factor for both the UV background dissociation 
+   rate and the H\ :sub:`2`\  dissociation rate given by 
+   :c:data:`RT_H2_dissociation_rate` (if present), that is separate from the 
+   :c:data:`H2_self_shielding` attenuation factor. 
+   The factor, which is intended to be unspecific can e.g. be used in order 
+   to include grain size dependent dust extinction or any other user-specific 
+   source of attenuation.
+   Default: 0.
 
 .. c:var:: int self_shielding_method
 
@@ -412,6 +435,57 @@ For all on/off integer flags, 0 is off and 1 is on.
    H\ :sub:`2`\ self-shielding computed using the ``H2_self_shielding``
    flag.
 
+.. c:var:: int h2_charge_exchange_rate
+
+   Flag which selects the formula used for calculating the ``k11`` rate 
+   coefficient. Default: 1.
+
+      - 1: Equation 4 from `Savin et. al., 2004 <https://arxiv.org/abs/astro-ph/0404288>`_.
+      - 2: Table 3, Equation 11 from `Abel et. al., 1996 <https://arxiv.org/abs/astro-ph/9608040>`_.
+
+.. c:var:: int h2_dust_rate
+
+   Flag which selects the formula used for calculating the ``h2dust`` rate
+   coefficient. Default: 1.
+
+      - 1: Table 1, Equation 23 from `Omukai, 2000 <https://arxiv.org/abs/astro-ph/0003212>`_.
+      - 2: Equation 3.8 from `Hollenbach & McKee, 1979 <https://ui.adsabs.harvard.edu/abs/1979ApJS...41..555H/abstract>`_.
+
+.. c:var:: int h2_h_cooling_rate
+
+   Flag which selects the formula for calculating the ``GAHI`` rate coefficient.
+   Default: 1.
+
+      - 1: Equation based on `Lique, 2015 <https://academic.oup.com/mnras/article/453/1/810/1752438>`_. 
+      - 2: Equation 40 with fitting coefficients found in Table 8, from `Glover & Abel, 2008 <https://arxiv.org/abs/0803.1768>`_.
+
+   Notes on setting 1:
+      This fit is accurate to within ~5% over the temperature range 100 < T < 5000 K. Lique (2015)
+      doesn't present data above 5000 K, so at higher temperatures the rate has been calculated
+      assuming that the de-excitation rate coefficients have the same values that they have at 5000 K.
+      Lique also doesn't give rates for T < 100 K, but since we don't expect H2 cooling to be important
+      there, it should be OK to just set the rate to zero.
+
+.. c:var:: int collisional_excitation_rates
+
+   On/off flag to toggle calculation of rate coefficients corresponding to collisional excitations 
+   (``ceHI``, ``ceHeI`` and ``ceHeII``). Default: 1
+
+.. c:var:: int collisional_ionisation_rates
+
+   On/off flag to toggle calculation of rate coefficients corresponding to collisional ionisations 
+   (``ciHeIS``, ``ciHI``, ``ciHeI`` and ``ciHeII``). Default: 1
+
+.. c:var:: int recombination_cooling_rates
+
+   On/off flag to toggle calculation of rate coefficients corresponding to recombination cooling 
+   (``reHII``, ``reHeII1``, ``reHeII2`` and ``reHeIII``). Default: 1
+
+.. c:var:: int bremsstrahlung_cooling_rates
+
+   On/off flag to toggle calculation of rate coefficients corresponding to bremsstrahlung cooling 
+   (``brem``). Default: 1
+
 .. c:var:: int omp_nthreads
 
    Sets the number of OpenMP threads.  If not set, this will be set to
@@ -454,6 +528,11 @@ Data files:
    <http://adsabs.harvard.edu/abs/2012ApJ...746..125H>`_.  The maximum
    redshift is 15.13.  Above that, collisional ionization equilibrium is
    assumed.
+
+ - **CloudyData_UVB=HM2012_high_density.h5** - same as
+   **CloudyData_UVB=HM2012.h5** but goes to higher density (10\ :sup:`10`
+   atom / cm\ :sup:`3`) and was computed with a more recent version of
+   Cloudy (17.06).
 
 To use the self-shielding approximation (see ``self_shielding_method``),
 one must properly account for the change in metal line cooling rates in
